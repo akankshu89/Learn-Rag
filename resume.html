@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Akankshu Bhardwaj — Resume</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1B2420;
+    --paper:#F3F4EF;
+    --panel:#20463C;
+    --panel-ink:#EFEFE8;
+    --brass:#B8863A;
+    --brass-soft:#D9B378;
+    --rule:#D8D6CC;
+    --white:#FFFFFF;
+    --muted:#5B655F;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    background:#E7E5DD;
+    font-family:'Inter', sans-serif;
+    color:var(--ink);
+    display:flex;
+    justify-content:center;
+    padding:24px 12px;
+  }
+  .page{
+    width:100%;
+    max-width:1000px;
+    min-height:1350px;
+    background:var(--paper);
+    display:grid;
+    grid-template-columns:290px 1fr;
+    box-shadow:0 20px 60px rgba(20,25,20,0.18);
+    overflow:hidden;
+  }
+
+  /* ---------- SIDEBAR ---------- */
+  .sidebar{
+    background:var(--panel);
+    color:var(--panel-ink);
+    padding:44px 30px;
+    position:relative;
+  }
+  .sidebar::after{
+    content:"";
+    position:absolute;
+    top:0; right:0; bottom:0;
+    width:1px;
+    background:linear-gradient(to bottom, transparent, var(--brass-soft) 15%, var(--brass-soft) 85%, transparent);
+    opacity:.5;
+  }
+  .name{
+    font-family:'IBM Plex Sans', sans-serif;
+    font-weight:700;
+    font-size:29px;
+    line-height:1.15;
+    letter-spacing:-0.01em;
+  }
+  .role{
+    margin-top:8px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    letter-spacing:.03em;
+    color:var(--brass-soft);
+    line-height:1.5;
+  }
+  .sb-block{ margin-top:34px; }
+  .sb-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    color:var(--brass-soft);
+    margin-bottom:12px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .sb-label::after{
+    content:"";
+    flex:1;
+    height:1px;
+    background:rgba(239,239,232,0.18);
+  }
+  .contact-row{
+    font-size:12.5px;
+    line-height:1.9;
+    word-break:break-word;
+    color:#DDE3DE;
+  }
+  .contact-row a{ color:#DDE3DE; text-decoration:none; }
+  .contact-row a:hover{ color:var(--brass-soft); }
+
+  .chip-wrap{ display:flex; flex-wrap:wrap; gap:7px; }
+  .chip{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    padding:5px 9px;
+    border:1px solid rgba(217,179,120,0.45);
+    border-radius:2px;
+    color:#EAE6D8;
+    letter-spacing:.01em;
+  }
+
+  .edu-item{ font-size:12.5px; line-height:1.6; }
+  .edu-degree{ font-weight:500; color:var(--white); }
+  .edu-sub{ color:#C7CFC9; font-size:11.5px; margin-top:2px; }
+  .edu-year{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    color:var(--brass-soft);
+    margin-top:4px;
+  }
+
+  .clients-list{ font-size:12px; line-height:2; color:#DDE3DE; }
+  .clients-list span{ color:#8FB3A4; margin-right:6px; font-family:'IBM Plex Mono', monospace; }
+
+  /* ---------- MAIN ---------- */
+  .main{ padding:44px 42px 40px 46px; }
+  .section-title{
+    font-family:'IBM Plex Sans', sans-serif;
+    font-weight:700;
+    font-size:13px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--panel);
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:16px;
+  }
+  .section-title::after{
+    content:"";
+    flex:1;
+    height:1px;
+    background:var(--rule);
+  }
+  .summary{
+    font-size:13.3px;
+    line-height:1.72;
+    color:#333B34;
+    max-width:64ch;
+  }
+  .summary strong{ color:var(--ink); font-weight:600; }
+
+  .top-skills{
+    display:flex;
+    gap:8px;
+    margin-top:14px;
+    flex-wrap:wrap;
+  }
+  .top-skill{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    padding:4px 10px;
+    background:rgba(32,70,60,0.07);
+    border-radius:20px;
+    color:var(--panel);
+  }
+
+  .exp{ margin-top:30px; }
+
+  /* circuit-trace timeline */
+  .trace{ position:relative; padding-left:26px; }
+  .trace::before{
+    content:"";
+    position:absolute;
+    left:5px; top:6px; bottom:6px;
+    width:2px;
+    background:repeating-linear-gradient(to bottom, var(--brass) 0 6px, transparent 6px 10px);
+  }
+  .role-item{ position:relative; padding-bottom:22px; }
+  .role-item:last-child{ padding-bottom:0; }
+  .node{
+    position:absolute;
+    left:-26px; top:3px;
+    width:11px; height:11px;
+    background:var(--paper);
+    border:2px solid var(--brass);
+    transform:rotate(45deg);
+  }
+  .role-item.current .node{ background:var(--brass); }
+
+  .role-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+  .role-title{
+    font-family:'IBM Plex Sans', sans-serif;
+    font-weight:600;
+    font-size:14.5px;
+    color:var(--ink);
+  }
+  .role-company{ color:var(--panel); font-weight:600; }
+  .role-dates{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    color:var(--muted);
+    white-space:nowrap;
+  }
+  .role-loc{
+    font-size:11px;
+    color:var(--muted);
+    margin-top:2px;
+  }
+  .role-desc{
+    font-size:12.3px;
+    line-height:1.62;
+    color:#3C453E;
+    margin-top:7px;
+    max-width:60ch;
+  }
+  .role-desc ul{ margin-top:5px; padding-left:16px; }
+  .role-desc li{ margin-bottom:2px; }
+
+  .footer-grid{
+    margin-top:30px;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:28px;
+  }
+  .mini-title{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--brass);
+    margin-bottom:9px;
+  }
+  .recognition{ font-size:11.6px; line-height:1.75; color:#3C453E; }
+  .recognition b{ color:var(--ink); }
+
+  @media print{
+    body{ background:none; padding:0; }
+    .page{ box-shadow:none; min-height:auto; }
+  }
+  @media (max-width:720px){
+    .page{ grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <aside class="sidebar">
+    <div class="name">Akankshu<br>Bhardwaj</div>
+    <div class="role">RECRUITMENT MANAGER<br>PEOPLE &amp; PLACE (PPL) — AKKODIS</div>
+
+    <div class="sb-block">
+      <div class="sb-label">Contact</div>
+      <div class="contact-row">
+        <a href="mailto:akankshu89@gmail.com">akankshu89@gmail.com</a><br>
+        <a href="https://www.linkedin.com/in/akankshubhardwaj-60509a15a" target="_blank">linkedin.com/in/akankshubhardwaj</a><br>
+        Noida, India
+      </div>
+    </div>
+
+    <div class="sb-block">
+      <div class="sb-label">Core Strengths</div>
+      <div class="chip-wrap">
+        <span class="chip">Recruitment-to-Recruitment</span>
+        <span class="chip">Stakeholder Mgmt</span>
+        <span class="chip">Team Leadership</span>
+        <span class="chip">Talent Mapping</span>
+        <span class="chip">Employer Branding</span>
+        <span class="chip">Full-Cycle Hiring</span>
+        <span class="chip">Product Management</span>
+      </div>
+    </div>
+
+    <div class="sb-block">
+      <div class="sb-label">Education</div>
+      <div class="edu-item">
+        <div class="edu-degree">B.Tech — Electrical &amp; Electronics Engineering</div>
+        <div class="edu-sub">Quantum University</div>
+        <div class="edu-year">2012 – 2016</div>
+      </div>
+    </div>
+
+    <div class="sb-block">
+      <div class="sb-label">Marquee Clients</div>
+      <div class="clients-list">
+        <div><span>&#8226;</span>Qualcomm</div>
+        <div><span>&#8226;</span>AMD &amp; Intel</div>
+        <div><span>&#8226;</span>Tokyo Electron</div>
+        <div><span>&#8226;</span>NXP Semiconductor</div>
+        <div><span>&#8226;</span>Keysight Technologies</div>
+        <div><span>&#8226;</span>Dexcom &amp; Oshkosh</div>
+        <div><span>&#8226;</span>Zebra Technologies</div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <section>
+      <div class="section-title">Profile</div>
+      <p class="summary">
+        Recruitment leader with <strong>8+ years</strong> across the U.S. staffing industry, building talent
+        pipelines for semiconductor, engineering, and manufacturing clients including Qualcomm, AMD, Intel, and
+        Tokyo Electron. Proven at sourcing hard-to-fill technical talent, leading recruiter teams, and turning
+        client relationships into repeatable, scalable delivery models — now extending that operating discipline
+        into <strong>product management</strong>.
+      </p>
+      <div class="top-skills">
+        <span class="top-skill">Full-Cycle Recruitment</span>
+        <span class="top-skill">Candidate Assessment</span>
+        <span class="top-skill">Team Mentorship</span>
+        <span class="top-skill">Delivery Strategy</span>
+      </div>
+    </section>
+
+    <section class="exp">
+      <div class="section-title">Experience</div>
+      <div class="trace">
+
+        <div class="role-item current">
+          <div class="node"></div>
+          <div class="role-head">
+            <div class="role-title">Recruitment Manager <span style="font-weight:400;">at</span> <span class="role-company">Akkodis</span> <span style="font-weight:400; color:var(--muted);">(An Adecco Group)</span></div>
+            <div class="role-dates">Jun 2026 — Present</div>
+          </div>
+          <div class="role-loc">Noida</div>
+          <div class="role-desc">Leading the People &amp; Place (PPL) recruitment function — talent mapping, stakeholder management, and employer branding for enterprise engineering accounts.</div>
+        </div>
+
+        <div class="role-item">
+          <div class="node"></div>
+          <div class="role-head">
+            <div class="role-title">Recruitment Lead — Recruitment &amp; Delivery <span style="font-weight:400;">at</span> <span class="role-company">Mindlance</span></div>
+            <div class="role-dates">Feb 2019 — May 2026 · 7y 4m</div>
+          </div>
+          <div class="role-loc">Noida</div>
+          <div class="role-desc">
+            Delivered full-cycle technical recruitment for a $400M+ staffing firm serving MSP programs (Kelly, TAPFIN, Allegis, Magnit, Pontoon). Built and led a recruiter team supporting Qualcomm, Tokyo Electron, Oshkosh, Keysight Technologies, AMD, NXP Semiconductor, Arris, and Zebra Technologies.
+            <ul>
+              <li>Sustained delivery through Mindlance's run as a top-ranked SIA staffing firm, 2015–2024</li>
+              <li>Owned process design and quality fundamentals behind a scalable delivery model</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="role-item">
+          <div class="node"></div>
+          <div class="role-head">
+            <div class="role-title">Recruitment Specialist — L&amp;T <span style="font-weight:400;">at</span> <span class="role-company">Maven Workforce</span></div>
+            <div class="role-dates">Mar 2017 — Feb 2019</div>
+          </div>
+          <div class="role-loc">Noida Area, India</div>
+          <div class="role-desc">Ran full-cycle sourcing, screening, and placement across contract, contract-to-hire, and permanent roles, including candidates on H1B, Green Card, and EAD status, sourced via Dice, CareerBuilder, and Monster.</div>
+        </div>
+
+        <div class="role-item">
+          <div class="node"></div>
+          <div class="role-head">
+            <div class="role-title">Process Executive <span style="font-weight:400;">at</span> <span class="role-company">iEnergizer</span></div>
+            <div class="role-dates">Nov 2016 — Feb 2017</div>
+          </div>
+          <div class="role-loc">Noida</div>
+          <div class="role-desc">Resolved technical product issues for domestic clients at a global BPO serving Healthcare, BFSI, Gaming, Publishing, and Legal industries.</div>
+        </div>
+
+      </div>
+    </section>
+
+    <div class="footer-grid">
+      <div>
+        <div class="mini-title">Recognitions Delivered Under</div>
+        <div class="recognition">
+          <b>Largest U.S. Staffing Firms</b> — SIA, 2015–2024<br>
+          <b>Largest IT Staffing Firms</b> — SIA, 2017–2024<br>
+          <b>Fastest Growing U.S. Staffing Firms</b> — SIA, 2011–2024
+        </div>
+      </div>
+      <div>
+        <div class="mini-title">Currently Exploring</div>
+        <div class="recognition">
+          Transitioning recruitment and stakeholder-management experience into product management — pairing hiring-pipeline discipline with product discovery and roadmap thinking.
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+</body>
+</html>
