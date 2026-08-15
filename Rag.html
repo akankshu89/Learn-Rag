@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAG Simulator — Watch a question become an answer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0F1720;
+    --ink-panel:#161F2A;
+    --ink-panel-2:#1C2733;
+    --paper:#F3ECDC;
+    --paper-dim:#B9AE95;
+    --amber:#E7A33E;
+    --teal:#4FA79E;
+    --coral:#D9694A;
+    --line:rgba(243,236,220,.10);
+    --line-strong:rgba(243,236,220,.22);
+    --radius:10px;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(79,167,158,.10), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 0%, rgba(231,163,62,.08), transparent 55%),
+      var(--ink);
+    color:var(--paper);
+    font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .wrap{max-width:1180px;margin:0 auto;padding:0 28px 90px;}
+
+  /* ---------- HERO ---------- */
+  .hero{padding:64px 0 36px;border-bottom:1px solid var(--line);}
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--amber);margin:0 0 18px;display:flex;align-items:center;gap:10px;
+  }
+  .eyebrow::before{content:'';width:18px;height:1px;background:var(--amber);display:inline-block;}
+  h1{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:clamp(34px,5vw,58px);
+    line-height:1.04;
+    margin:0 0 18px;
+    letter-spacing:-.01em;
+    max-width:16ch;
+  }
+  h1 em{font-style:italic;font-weight:400;color:var(--teal);}
+  .hero p.lede{
+    font-size:16.5px;line-height:1.65;color:var(--paper-dim);max-width:58ch;margin:0 0 30px;
+  }
+
+  .question-card{
+    display:flex;align-items:flex-start;gap:14px;
+    background:var(--ink-panel);border:1px solid var(--line-strong);
+    border-left:3px solid var(--amber);
+    border-radius:var(--radius);
+    padding:18px 20px;max-width:640px;
+  }
+  .question-card .qmark{
+    font-family:'Fraunces',serif;font-size:30px;color:var(--amber);line-height:1;flex-shrink:0;
+  }
+  .question-card .qtext{
+    font-family:'IBM Plex Mono',monospace;font-size:14.5px;line-height:1.55;color:var(--paper);
+  }
+  .question-card .qlabel{
+    display:block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--paper-dim);margin-bottom:6px;
+  }
+
+  .legend{display:flex;gap:22px;margin-top:26px;flex-wrap:wrap;}
+  .legend span{
+    font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--paper-dim);
+    display:flex;align-items:center;gap:8px;
+  }
+  .legend i{width:8px;height:8px;border-radius:50%;display:inline-block;}
+  .legend .i-teal{background:var(--teal);}
+  .legend .i-amber{background:var(--amber);}
+  .legend .i-coral{background:var(--coral);}
+
+  /* ---------- LAYOUT ---------- */
+  .layout{display:grid;grid-template-columns:250px 1fr;gap:32px;padding-top:38px;align-items:start;}
+
+  /* Stepper */
+  .stepper{position:sticky;top:20px;}
+  .phase-group{margin-bottom:22px;}
+  .phase-title{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--paper-dim);margin:0 0 10px;padding-left:34px;
+  }
+  .step-list{list-style:none;margin:0;padding:0;position:relative;}
+  .step-list::before{
+    content:'';position:absolute;left:11px;top:4px;bottom:4px;width:1px;background:var(--line-strong);
+  }
+  .step-item{position:relative;}
+  .step-btn{
+    all:unset;cursor:pointer;display:flex;align-items:flex-start;gap:14px;
+    width:100%;padding:9px 8px 9px 0;border-radius:8px;
+  }
+  .step-btn:hover{background:rgba(243,236,220,.03);}
+  .step-num{
+    flex-shrink:0;width:23px;height:23px;border-radius:50%;
+    background:var(--ink-panel);border:1px solid var(--line-strong);
+    font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--paper-dim);
+    display:flex;align-items:center;justify-content:center;position:relative;z-index:1;
+    transition:all .25s ease;
+  }
+  .step-label{
+    font-size:13.5px;color:var(--paper-dim);padding-top:2px;line-height:1.3;transition:color .25s ease;
+  }
+  .step-item.done .step-num{background:var(--teal);border-color:var(--teal);color:var(--ink);}
+  .step-item.active .step-num{background:var(--amber);border-color:var(--amber);color:var(--ink);}
+  .step-item.active .step-label{color:var(--paper);font-weight:500;}
+  .step-item.done .step-label{color:var(--paper-dim);}
+  .step-btn:focus-visible{outline:2px solid var(--amber);outline-offset:2px;}
+
+  /* Main stage column */
+  .main-col{min-width:0;}
+  .progress-track{height:2px;background:var(--line);border-radius:2px;margin-bottom:22px;overflow:hidden;}
+  .progress-fill{height:100%;background:var(--amber);width:0%;transition:width .4s ease;}
+
+  .info-panel{margin-bottom:20px;}
+  .info-meta{
+    display:flex;align-items:center;gap:12px;margin-bottom:8px;
+    font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--teal);letter-spacing:.06em;text-transform:uppercase;
+  }
+  .info-meta .count{color:var(--paper-dim);}
+  .info-panel h2{
+    font-family:'Fraunces',serif;font-weight:600;font-size:26px;margin:0 0 10px;letter-spacing:-.01em;
+  }
+  .info-panel p{font-size:15px;line-height:1.62;color:var(--paper-dim);max-width:64ch;margin:0 0 10px;}
+  .detail-line{
+    font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--amber);
+    background:rgba(231,163,62,.08);border:1px solid rgba(231,163,62,.25);
+    display:inline-block;padding:5px 10px;border-radius:6px;
+  }
+
+  /* Stage */
+  .stage{
+    position:relative;background:var(--ink-panel);border:1px solid var(--line-strong);
+    border-radius:14px;min-height:440px;overflow:hidden;
+  }
+  .stage::before{
+    content:'';position:absolute;inset:0;
+    background-image:radial-gradient(rgba(243,236,220,.06) 1px, transparent 1px);
+    background-size:26px 26px;pointer-events:none;
+  }
+  .stage-tag{
+    position:absolute;top:16px;left:18px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--paper-dim);z-index:3;
+  }
+
+  .constellation{position:absolute;inset:0;}
+  .constellation svg{position:absolute;inset:0;width:100%;height:100%;}
+  .constellation svg line{transition:opacity .5s ease, stroke-width .5s ease;}
+
+  .rawdocs{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:18px;
+    opacity:0;transition:opacity .5s ease;pointer-events:none;
+  }
+  .rawdocs.show{opacity:1;pointer-events:auto;}
+  .doc{
+    width:74px;height:96px;background:var(--paper);border-radius:4px;position:relative;
+    box-shadow:0 8px 20px rgba(0,0,0,.35);transform:rotate(var(--r,0deg));
+  }
+  .doc::before,.doc::after{content:'';position:absolute;left:10px;right:10px;height:3px;background:rgba(15,23,32,.18);border-radius:2px;}
+  .doc::before{top:16px;}
+  .doc::after{top:26px;width:60%;}
+  .doc span{
+    position:absolute;bottom:8px;left:0;right:0;text-align:center;
+    font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:rgba(15,23,32,.55);
+  }
+
+  .card{
+    position:absolute;width:150px;
+    left:var(--l);top:var(--t);
+    transform:translate(-50%,-50%) scale(.94);
+    background:var(--paper);color:#1a1611;border-radius:6px;
+    padding:10px 11px 9px;
+    box-shadow:0 6px 16px rgba(0,0,0,.32);
+    z-index:2;opacity:0;pointer-events:none;
+    transition:opacity .55s ease, left .8s cubic-bezier(.2,.7,.2,1), top .8s cubic-bezier(.2,.7,.2,1), transform .5s ease, box-shadow .4s ease;
+  }
+  .card.show{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1);}
+  .card.dim{opacity:.28;}
+  .card .cid{
+    font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#8a7f66;letter-spacing:.06em;
+    display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;
+  }
+  .card .ctext{font-size:11.3px;line-height:1.38;font-weight:500;}
+  .card .ctext b{background:rgba(231,163,62,.4);border-radius:2px;padding:0 1px;}
+  .card .cvec{
+    display:none;font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:var(--teal);
+    margin-top:6px;padding-top:5px;border-top:1px dashed rgba(15,23,32,.18);
+  }
+  .card.is-embedded .cvec{display:block;}
+  .card .score{
+    display:none;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--ink);
+    background:var(--amber);border-radius:10px;padding:1px 7px;
+  }
+  .card.show-score .score{display:inline-block;}
+  .card.top-match{box-shadow:0 0 0 2px var(--amber), 0 10px 22px rgba(231,163,62,.25);}
+  .card.keyword .ctext b{background:rgba(217,105,74,.45);}
+  .card .kbadge{
+    display:none;font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:var(--coral);margin-top:5px;
+  }
+  .card.keyword .kbadge{display:block;}
+
+  .querycard{
+    position:absolute;width:150px;left:var(--l);top:var(--t);
+    transform:translate(-50%,-50%) scale(.9);
+    background:var(--ink);border:1.5px solid var(--amber);border-radius:6px;
+    padding:9px 11px;z-index:4;opacity:0;pointer-events:none;
+    transition:opacity .5s ease, transform .5s ease;
+  }
+  .querycard.show{opacity:1;transform:translate(-50%,-50%) scale(1);}
+  .querycard .qlab{font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:var(--amber);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px;}
+  .querycard .qtxt{font-size:10.6px;line-height:1.35;color:var(--paper);}
+  .pulse{
+    position:absolute;left:var(--l);top:var(--t);width:150px;height:64px;
+    transform:translate(-50%,-50%);border-radius:10px;border:1px solid var(--amber);
+    opacity:0;z-index:1;
+  }
+  .pulse.show{animation:pulse 2.2s ease-out infinite;}
+  @keyframes pulse{0%{opacity:.55;transform:translate(-50%,-50%) scale(1);}100%{opacity:0;transform:translate(-50%,-50%) scale(1.35);}}
+
+  /* prompt / generate / cite views */
+  .flat-view{
+    position:absolute;inset:0;padding:52px 34px 30px;opacity:0;pointer-events:none;
+    transition:opacity .5s ease;overflow:auto;
+  }
+  .flat-view.show{opacity:1;pointer-events:auto;}
+  .ledger{
+    background:var(--ink);border:1px solid var(--line-strong);border-radius:8px;
+    padding:20px 22px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.85;
+    color:var(--paper-dim);max-width:640px;
+  }
+  .ledger .tag{color:var(--teal);}
+  .ledger .num{color:var(--amber);font-weight:600;}
+  .ledger .qline{color:var(--paper);}
+  .ledger-title{
+    font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--paper-dim);margin:0 0 10px;
+  }
+
+  .answer-card{
+    background:var(--paper);color:#1a1611;border-radius:8px;padding:20px 22px;max-width:640px;
+    margin-top:18px;box-shadow:0 10px 26px rgba(0,0,0,.3);
+  }
+  .answer-card .alabel{
+    font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+    color:#8a7f66;margin-bottom:8px;
+  }
+  .answer-card .atext{font-size:15px;line-height:1.65;min-height:52px;}
+  .cite{
+    display:inline-block;background:var(--amber);color:#1a1611;font-family:'IBM Plex Mono',monospace;
+    font-size:11px;font-weight:600;border-radius:9px;padding:0 6px;margin-left:2px;cursor:pointer;
+    border:none;transform:translateY(-1px);
+  }
+  .cite:hover, .cite.active{background:var(--coral);color:var(--paper);}
+  .sources{display:flex;gap:12px;margin-top:16px;flex-wrap:wrap;}
+  .source-mini{
+    background:var(--ink);border:1px solid var(--line-strong);border-radius:6px;padding:10px 12px;
+    max-width:260px;font-size:12px;line-height:1.45;color:var(--paper-dim);transition:border-color .3s ease, box-shadow .3s ease;
+  }
+  .source-mini b{color:var(--amber);}
+  .source-mini.highlight{border-color:var(--coral);box-shadow:0 0 0 1px var(--coral);color:var(--paper);}
+  .cursor-blink{display:inline-block;width:7px;height:15px;background:var(--ink);vertical-align:-2px;animation:blink 1s step-start infinite;}
+  @keyframes blink{50%{opacity:0;}}
+
+  /* controls */
+  .controls{display:flex;align-items:center;gap:10px;margin-top:22px;flex-wrap:wrap;}
+  .btn{
+    font-family:'IBM Plex Mono',monospace;font-size:12.5px;letter-spacing:.03em;
+    background:transparent;border:1px solid var(--line-strong);color:var(--paper);
+    padding:9px 16px;border-radius:7px;cursor:pointer;transition:all .2s ease;
+  }
+  .btn:hover:not(:disabled){border-color:var(--amber);color:var(--amber);}
+  .btn:disabled{opacity:.35;cursor:not-allowed;}
+  .btn.primary{background:var(--amber);border-color:var(--amber);color:#1a1611;font-weight:600;}
+  .btn.primary:hover{background:#f0b358;color:#1a1611;}
+  .spacer{flex:1;}
+  .step-count{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--paper-dim);}
+
+  footer{
+    margin-top:60px;padding-top:22px;border-top:1px solid var(--line);
+    font-size:13px;color:var(--paper-dim);line-height:1.6;max-width:70ch;
+  }
+
+  @media (max-width:860px){
+    .layout{grid-template-columns:1fr;}
+    .stepper{position:static;}
+    .step-list{display:flex;overflow-x:auto;gap:4px;padding-bottom:6px;}
+    .step-list::before{display:none;}
+    .step-item{flex-shrink:0;}
+    .step-btn{flex-direction:column;align-items:center;gap:6px;padding:6px;width:70px;}
+    .step-label{font-size:10px;text-align:center;padding-top:0;}
+    .phase-title{padding-left:6px;}
+    .stage{min-height:380px;}
+    .card{width:120px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition-duration:.01ms !important;animation-duration:.01ms !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <section class="hero">
+    <p class="eyebrow">RAG · Retrieval-Augmented Generation</p>
+    <h1>Watch a question<br>become an <em>answer</em>.</h1>
+    <p class="lede">Eight step through the full RAG pipeline — from raw documents to a cited, grounded answer — using one running example: a question against Nimbus's internal product wiki.</p>
+
+    <div class="question-card">
+      <span class="qmark">“</span>
+      <div>
+        <span class="qlabel">The question we'll trace</span>
+        <span class="qtext">How long is a sprint at Nimbus, and when does the design review happen?</span>
+      </div>
+    </div>
+
+    <div class="legend">
+      <span><i class="i-teal"></i> stored chunk</span>
+      <span><i class="i-amber"></i> query / top match</span>
+      <span><i class="i-coral"></i> cited source</span>
+    </div>
+  </section>
+
+  <div class="layout">
+    <!-- STEPPER -->
+    <nav class="stepper" aria-label="RAG pipeline steps">
+      <div class="phase-group">
+        <p class="phase-title">Indexing</p>
+        <ul class="step-list" id="phase-index"></ul>
+      </div>
+      <div class="phase-group">
+        <p class="phase-title">Retrieval + Generation</p>
+        <ul class="step-list" id="phase-retrieve"></ul>
+      </div>
+    </nav>
+
+    <!-- MAIN -->
+    <div class="main-col">
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+      <div class="info-panel">
+        <div class="info-meta">
+          <span id="infoPhase">Indexing</span>
+          <span class="count" id="infoCount">Step 01 / 11</span>
+        </div>
+        <h2 id="infoTitle">Data Collection</h2>
+        <p id="infoBody">Loading…</p>
+        <span class="detail-line" id="infoDetail">—</span>
+      </div>
+
+      <div class="stage" id="stage">
+        <span class="stage-tag" id="stageTag">Vector space</span>
+
+        <div class="rawdocs" id="rawdocs">
+          <div class="doc" style="--r:-6deg"><span>WIKI</span></div>
+          <div class="doc" style="--r:3deg"><span>DOCS</span></div>
+          <div class="doc" style="--r:-2deg"><span>FAQ</span></div>
+        </div>
+
+        <div class="constellation" id="constellation">
+          <svg id="lines"></svg>
+          <!-- cards + query card injected by JS -->
+        </div>
+
+        <div class="flat-view" id="promptView">
+          <p class="ledger-title">Prompt assembled &amp; sent to the model</p>
+          <div class="ledger" id="ledgerText"></div>
+        </div>
+
+        <div class="flat-view" id="generateView">
+          <p class="ledger-title">Model generates a grounded answer</p>
+          <div class="answer-card">
+            <div class="alabel">Nimbus Assistant</div>
+            <div class="atext" id="genText"></div>
+          </div>
+        </div>
+
+        <div class="flat-view" id="citeView">
+          <p class="ledger-title">Answer with source attribution</p>
+          <div class="answer-card">
+            <div class="alabel">Nimbus Assistant</div>
+            <div class="atext" id="citeText"></div>
+          </div>
+          <div class="sources" id="sourcesRow"></div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="btn" id="prevBtn">← Prev</button>
+        <button class="btn" id="nextBtn">Next →</button>
+        <button class="btn primary" id="playBtn">▶ Run simulation</button>
+        <button class="btn" id="resetBtn">Reset</button>
+        <div class="spacer"></div>
+        <span class="step-count" id="stepCount">Step 1 of 11</span>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Each card represents one chunk of Nimbus's product wiki. Positions in the vector space are illustrative — placed by topic so related chunks cluster together, the way real embeddings would. Steps 7 and 8 (re-ranking, hybrid search) are optional stages some RAG systems add on top of the basic loop.
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  const QUERY_TEXT = "How long is a sprint at Nimbus, and when does the design review happen?";
+  const QUERY_POS = { l: 30, t: 32 };
+
+  const chunks = [
+    { id:1, text:"Nimbus sprints run for two weeks, starting every other Monday.", vec:"[0.82,-0.14,0.55]", l:22, t:22, score:0.93, keyword:"sprints", top:true },
+    { id:2, text:"The design review happens every Wednesday at 3 PM IST.", vec:"[0.79,-0.09,0.61]", l:37, t:35, score:0.89, keyword:"design review", top:true },
+    { id:3, text:"Release notes are published every Friday on the changelog page.", vec:"[0.61,-0.20,0.30]", l:24, t:50, score:0.58 },
+    { id:4, text:"Feature requests are logged in the backlog tool, prioritized using RICE scoring.", vec:"[0.11,0.64,-0.22]", l:66, t:20, score:0.41 },
+    { id:5, text:"New PMs get a 30-60-90 day onboarding plan with a mentor.", vec:"[0.05,0.58,-0.11]", l:78, t:31, score:0.33 },
+    { id:6, text:"The support team's SLA for critical bugs is 4 hours.", vec:"[-0.30,0.20,0.48]", l:80, t:73, score:0.27 },
+    { id:7, text:"The Nimbus API rate limit is 1000 requests/min for Pro accounts.", vec:"[-0.42,0.11,0.39]", l:68, t:66, score:0.22 },
+    { id:8, text:"Nimbus offices are located in Noida, Austin, and Berlin.", vec:"[-0.55,-0.40,0.02]", l:13, t:78, score:0.15 }
+  ];
+
+  const topChunks = chunks.filter(c=>c.top);
+
+  const steps = [
+    { phase:'index', title:'Data Collection', view:'space', sub:'raw',
+      body:"Before anything else, gather the raw source material the model should be able to draw on — product docs, wikis, PDFs. Here that's Nimbus's internal product wiki.",
+      detail:'3 source documents found', tag:'Raw sources' },
+    { phase:'index', title:'Chunking', view:'space', sub:'chunked',
+      body:"Long documents get split into smaller, self-contained pieces — usually 200–500 tokens, sometimes with slight overlap so meaning isn't lost at the edges. Each chunk becomes its own retrievable unit.",
+      detail:'8 chunks created · ~15 tokens each', tag:'Chunked' },
+    { phase:'index', title:'Embedding', view:'space', sub:'embedded',
+      body:"Each chunk is passed through an embedding model, which converts its meaning into a vector — a list of numbers positioned in space so that similar ideas land near each other.",
+      detail:'embedding model · 1536 dims (shown in 2D)', tag:'Embedded' },
+    { phase:'index', title:'Storage', view:'space', sub:'stored',
+      body:"Every vector is stored in a vector database alongside its original text and metadata — ready to be searched in milliseconds whenever a question comes in.",
+      detail:'8 vectors indexed → vector DB', tag:'Stored in vector DB' },
+    { phase:'retrieve', title:'Query Embedding', view:'space', sub:'queried',
+      body:"When someone asks a question, it's converted into a vector too — using the exact same embedding model, so it lands in the same space as the stored chunks.",
+      detail:'query → vector', tag:'Query embedded' },
+    { phase:'retrieve', title:'Similarity Search', view:'space', sub:'ranked',
+      body:"The query vector is compared against every stored vector — commonly with cosine similarity — and the closest matches are pulled out as the top-k most relevant chunks.",
+      detail:'top-k = 2 · cosine similarity', tag:'Similarity search' },
+    { phase:'retrieve', title:'Re-ranking', view:'space', sub:'reranked',
+      body:"Vector search is fast but approximate. A slower, more precise re-ranker model can re-score the retrieved chunks to sharpen the ordering before they're used. (Optional.)",
+      detail:'cross-encoder re-score applied', tag:'Re-ranked' },
+    { phase:'retrieve', title:'Hybrid Search', view:'space', sub:'hybrid',
+      body:"Vector search can miss exact terms — names, codes, specific phrases. Hybrid search blends it with traditional keyword search (like BM25) to catch what similarity alone might not. (Optional.)",
+      detail:'keyword match: "sprints", "design review"', tag:'Hybrid search' },
+    { phase:'retrieve', title:'Prompt Augmentation', view:'prompt',
+      body:"The retrieved chunks are inserted into the prompt alongside the original question — with instructions telling the model to answer using this context.",
+      detail:'assembling prompt · 2 chunks + question', tag:'Prompt' },
+    { phase:'retrieve', title:'Generation', view:'generate',
+      body:"The model reads the augmented prompt and generates an answer grounded in the retrieved context — not just whatever it happened to memorize during training.",
+      detail:'generating response…', tag:'Answer' },
+    { phase:'retrieve', title:'Citation / Attribution', view:'cite',
+      body:"Well-built RAG systems return which chunks were used, so the answer can be traced back to its sources — letting anyone verify it. Click a citation below.",
+      detail:'2 sources cited', tag:'Cited answer' }
+  ];
+
+  const ANSWER = "A Nimbus sprint runs two weeks, starting every other Monday. Design review happens weekly, every Wednesday at 3 PM IST.";
+
+  // ---------- build DOM ----------
+  const constellation = document.getElementById('constellation');
+  const linesSvg = document.getElementById('lines');
+
+  chunks.forEach(c=>{
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.id = 'card-'+c.id;
+    card.style.setProperty('--l', c.l+'%');
+    card.style.setProperty('--t', c.t+'%');
+    card.innerHTML =
+      '<div class="cid"><span>#'+c.id+'</span><span class="score"></span></div>'+
+      '<div class="ctext">'+highlightKeyword(c)+'</div>'+
+      '<div class="kbadge">🔑 keyword match</div>'+
+      '<div class="cvec">'+c.vec+'</div>';
+    constellation.appendChild(card);
+
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('id','line-'+c.id);
+    line.setAttribute('x1', QUERY_POS.l); line.setAttribute('y1', QUERY_POS.t);
+    line.setAttribute('x2', c.l); line.setAttribute('y2', c.t);
+    line.setAttribute('stroke', c.top ? 'var(--amber)' : 'rgba(243,236,220,.25)');
+    line.setAttribute('stroke-width', c.top ? '0.4' : '0.15');
+    line.setAttribute('opacity','0');
+    linesSvg.setAttribute('viewBox','0 0 100 100');
+    linesSvg.setAttribute('preserveAspectRatio','none');
+    linesSvg.appendChild(line);
+  });
+
+  function highlightKeyword(c){
+    if(!c.keyword) return c.text;
+    return c.text.replace(c.keyword, '<b>'+c.keyword+'</b>');
+  }
+
+  const pulse = document.createElement('div');
+  pulse.className = 'pulse';
+  pulse.id = 'pulse';
+  pulse.style.setProperty('--l', QUERY_POS.l+'%');
+  pulse.style.setProperty('--t', QUERY_POS.t+'%');
+  constellation.appendChild(pulse);
+
+  const qcard = document.createElement('div');
+  qcard.className = 'querycard';
+  qcard.id = 'querycard';
+  qcard.style.setProperty('--l', QUERY_POS.l+'%');
+  qcard.style.setProperty('--t', QUERY_POS.t+'%');
+  qcard.innerHTML = '<div class="qlab">Query</div><div class="qtxt">'+QUERY_TEXT+'</div>';
+  constellation.appendChild(qcard);
+
+  // ---------- build stepper ----------
+  const idxList = document.getElementById('phase-index');
+  const retList = document.getElementById('phase-retrieve');
+  steps.forEach((s,i)=>{
+    const li = document.createElement('li');
+    li.className = 'step-item';
+    li.id = 'step-item-'+i;
+    li.innerHTML =
+      '<button class="step-btn" data-i="'+i+'">'+
+        '<span class="step-num">'+String(i+1).padStart(2,'0')+'</span>'+
+        '<span class="step-label">'+s.title+'</span>'+
+      '</button>';
+    (s.phase==='index' ? idxList : retList).appendChild(li);
+  });
+
+  document.querySelectorAll('.step-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{ stopAutoplay(); setStep(parseInt(btn.dataset.i,10)); });
+  });
+
+  // ---------- state ----------
+  let current = 0;
+  let autoplayTimer = null;
+  let typeTimer = null;
+
+  const els = {
+    progressFill: document.getElementById('progressFill'),
+    infoPhase: document.getElementById('infoPhase'),
+    infoCount: document.getElementById('infoCount'),
+    infoTitle: document.getElementById('infoTitle'),
+    infoBody: document.getElementById('infoBody'),
+    infoDetail: document.getElementById('infoDetail'),
+    stageTag: document.getElementById('stageTag'),
+    rawdocs: document.getElementById('rawdocs'),
+    constellation: document.getElementById('constellation'),
+    promptView: document.getElementById('promptView'),
+    generateView: document.getElementById('generateView'),
+    citeView: document.getElementById('citeView'),
+    ledgerText: document.getElementById('ledgerText'),
+    genText: document.getElementById('genText'),
+    citeText: document.getElementById('citeText'),
+    sourcesRow: document.getElementById('sourcesRow'),
+    prevBtn: document.getElementById('prevBtn'),
+    nextBtn: document.getElementById('nextBtn'),
+    playBtn: document.getElementById('playBtn'),
+    resetBtn: document.getElementById('resetBtn'),
+    stepCount: document.getElementById('stepCount'),
+  };
+
+  function setStep(i){
+    current = Math.max(0, Math.min(steps.length-1, i));
+    render();
+  }
+
+  function render(){
+    const s = steps[current];
+
+    // stepper states
+    steps.forEach((_,i)=>{
+      const li = document.getElementById('step-item-'+i);
+      li.classList.toggle('active', i===current);
+      li.classList.toggle('done', i<current);
+    });
+    document.getElementById('step-item-'+current).scrollIntoView({block:'nearest', inline:'center', behavior:'smooth'});
+
+    // info panel
+    els.progressFill.style.width = ((current+1)/steps.length*100)+'%';
+    els.infoPhase.textContent = s.phase==='index' ? 'Indexing' : 'Retrieval + Generation';
+    els.infoCount.textContent = 'Step '+String(current+1).padStart(2,'0')+' / '+steps.length;
+    els.infoTitle.textContent = s.title;
+    els.infoBody.textContent = s.body;
+    els.infoDetail.textContent = s.detail;
+    els.stageTag.textContent = s.tag;
+    els.stepCount.textContent = 'Step '+(current+1)+' of '+steps.length;
+
+    els.prevBtn.disabled = current===0;
+    els.nextBtn.disabled = current===steps.length-1;
+
+    // view switching
+    const isSpace = s.view==='space';
+    els.constellation.style.display = isSpace ? 'block' : 'none';
+    els.rawdocs.classList.toggle('show', isSpace && s.sub==='raw');
+    els.promptView.classList.toggle('show', s.view==='prompt');
+    els.generateView.classList.toggle('show', s.view==='generate');
+    els.citeView.classList.toggle('show', s.view==='cite');
+
+    if(isSpace) renderSpace(s.sub);
+    if(s.view==='prompt') renderPrompt();
+    if(s.view==='generate') renderGenerate();
+    if(s.view==='cite') renderCite();
+  }
+
+  function renderSpace(sub){
+    const showCards = sub !== 'raw';
+    const showEmbedded = ['embedded','stored','queried','ranked','reranked','hybrid'].includes(sub);
+    const showQuery = ['queried','ranked','reranked','hybrid'].includes(sub);
+    const showRanking = ['ranked','reranked','hybrid'].includes(sub);
+    const isHybrid = sub === 'hybrid';
+
+    chunks.forEach(c=>{
+      const card = document.getElementById('card-'+c.id);
+      card.classList.toggle('show', showCards);
+      card.classList.toggle('is-embedded', showEmbedded);
+      card.classList.toggle('show-score', showRanking);
+      card.classList.toggle('top-match', showRanking && c.top);
+      card.classList.toggle('dim', showRanking && !c.top);
+      card.classList.toggle('keyword', isHybrid && c.top);
+      const scoreEl = card.querySelector('.score');
+      if(showRanking){
+        const val = sub==='reranked' || sub==='hybrid' ? (c.top ? c.score+0.03 : c.score-0.02) : c.score;
+        scoreEl.textContent = val.toFixed(2);
+      }
+      const line = document.getElementById('line-'+c.id);
+      line.setAttribute('opacity', showRanking ? (c.top ? '0.9' : '0.25') : '0');
+    });
+
+    document.getElementById('querycard').classList.toggle('show', showQuery);
+    document.getElementById('pulse').classList.toggle('show', showQuery);
+  }
+
+  function renderPrompt(){
+    let html = '<span class="tag">SYSTEM</span> Answer using only the context below.\n\n';
+    topChunks.forEach(c=>{
+      html += '<span class="num">['+c.id+']</span> '+c.text+'\n\n';
+    });
+    html += '<span class="tag">QUESTION</span> <span class="qline">'+QUERY_TEXT+'</span>';
+    els.ledgerText.innerHTML = html.replace(/\n/g,'<br>');
+  }
+
+  function renderGenerate(){
+    clearInterval(typeTimer);
+    els.genText.innerHTML = '';
+    let i = 0;
+    const cursor = '<span class="cursor-blink"></span>';
+    typeTimer = setInterval(()=>{
+      i++;
+      els.genText.innerHTML = ANSWER.slice(0,i) + (i<ANSWER.length ? cursor : '');
+      if(i>=ANSWER.length) clearInterval(typeTimer);
+    }, 18);
+  }
+
+  function renderCite(){
+    els.citeText.innerHTML = ANSWER +
+      ' <button class="cite" data-src="1">1</button><button class="cite" data-src="2">2</button>';
+
+    els.sourcesRow.innerHTML = '';
+    topChunks.forEach(c=>{
+      const div = document.createElement('div');
+      div.className = 'source-mini';
+      div.id = 'src-'+c.id;
+      div.innerHTML = '<b>['+c.id+']</b> '+c.text;
+      els.sourcesRow.appendChild(div);
+    });
+
+    els.citeText.querySelectorAll('.cite').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const n = btn.dataset.src;
+        els.citeText.querySelectorAll('.cite').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.source-mini').forEach(el=>el.classList.remove('highlight'));
+        const target = document.getElementById('src-'+n);
+        if(target){ target.classList.add('highlight'); target.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'}); }
+      });
+    });
+  }
+
+  // ---------- controls ----------
+  els.prevBtn.addEventListener('click', ()=>{ stopAutoplay(); setStep(current-1); });
+  els.nextBtn.addEventListener('click', ()=>{ stopAutoplay(); setStep(current+1); });
+  els.resetBtn.addEventListener('click', ()=>{ stopAutoplay(); setStep(0); });
+
+  els.playBtn.addEventListener('click', ()=>{
+    if(autoplayTimer){ stopAutoplay(); return; }
+    if(current===steps.length-1) setStep(0);
+    els.playBtn.textContent = '⏸ Pause';
+    autoplayTimer = setInterval(()=>{
+      if(current>=steps.length-1){ stopAutoplay(); return; }
+      setStep(current+1);
+    }, 3400);
+  });
+
+  function stopAutoplay(){
+    clearInterval(autoplayTimer);
+    autoplayTimer = null;
+    els.playBtn.textContent = '▶ Run simulation';
+  }
+
+  document.addEventListener('keydown', (e)=>{
+    if(e.key==='ArrowRight'){ stopAutoplay(); setStep(current+1); }
+    if(e.key==='ArrowLeft'){ stopAutoplay(); setStep(current-1); }
+  });
+
+  render();
+})();
+</script>
+
+</body>
+</html>
